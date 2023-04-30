@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  backend:
+    container_name: 'Docker コンテナ名'
+    image: 'Docker イメージ名:latest'
+    build:
+      context: .
+    volumes:
+      - .:/usr/local/src
+    ports:
+      - 8000:8000
+    tty: true
