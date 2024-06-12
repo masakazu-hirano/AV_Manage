@@ -32,6 +32,15 @@ def Create_Spotify_Client() -> Spotify:
 		retries = 1
 	)
 
+def Create_Boto3_Client():
+	return  boto3.client(
+		service_name = 's3',
+		endpoint_url = f"https://{os.getenv('R2_BUCKET_URL')}.r2.cloudflarestorage.com",
+		aws_access_key_id = os.getenv('R2_ACCESS_KEY_ID'),
+		aws_secret_access_key = os.getenv('R2_SECRET_ACCESS_KEY'),
+		config = Config(signature_version = 'v4')
+	)
+
 if __name__ == '__main__':
 	logging.basicConfig(
 		level = logging.INFO,
@@ -46,6 +55,7 @@ if __name__ == '__main__':
 		artist_name: str = artist_information['name']
 		artist_image_url: str = artist_information['images'][0]['url']
 
+		s3_client = Create_Boto3_Client()
 		logging.info(msg = '処理が正常に終了しました。')
 	else:
 		logging.error(msg = '環境変数（.env）の読み込みに失敗しました。')
