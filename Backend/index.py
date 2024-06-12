@@ -3,7 +3,6 @@ import os
 
 import boto3
 import requests
-import spotipy
 
 from io import BytesIO
 
@@ -11,22 +10,9 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 from PIL import Image
 from spotipy.client import Spotify
-from spotipy.oauth2 import SpotifyClientCredentials
 
 from Modules.SET_Environment import Read_Environment_File
-
-def Create_Spotify_Client() -> Spotify:
-	return spotipy.Spotify(
-		auth_manager = SpotifyClientCredentials(
-			client_id = os.getenv(key = 'SPOTIFY_CLIENT_ID'),
-			client_secret = os.getenv(key = 'SPOTIFY_CLIENT_SECRET_KEY'),
-			requests_timeout = 30
-		),
-
-		language = 'ja',
-		requests_timeout = 30,
-		retries = 1
-	)
+from Modules.Spotify import SET_Spotify_Client
 
 def Create_Boto3_Client():
 	return  boto3.client(
@@ -62,7 +48,7 @@ if __name__ == '__main__':
 
 	if Read_Environment_File() == True:
 		s3_client = Create_Boto3_Client()
-		spotify_client: Spotify = Create_Spotify_Client()
+		spotify_client: Spotify = SET_Spotify_Client()
 
 		artist_information: dict = spotify_client.artist(artist_id = '3z8diLlUCkN1j9N9ZdnfBJ')
 		artist_name: str = artist_information['name']
