@@ -7,6 +7,7 @@ import requests
 from io import BytesIO
 from botocore.config import Config
 from botocore.exceptions import ClientError
+from datetime import datetime
 from PIL import Image
 from spotipy.client import Spotify
 
@@ -20,6 +21,14 @@ class Artist:
 		self.genres = genres,
 		self.popularity = popularity,
 		self.followers = followers,
+		self.image_url = image_url
+
+class Album:
+	def __init__(self, id: str, album_type: str, name: str, release_date: datetime, image_url: str):
+		self.id = id,
+		self.type = album_type,
+		self.name = name,
+		self.release_date = release_date,
 		self.image_url = image_url
 
 def Create_Boto3_Client():
@@ -60,15 +69,15 @@ if __name__ == '__main__':
 		artist_id_list: tuple = ('3z8diLlUCkN1j9N9ZdnfBJ', '4SpbR6yFEvexJuaBpgAU5p', '5R7AMwDeroq6Ls0COQYpS4')
 		artist_list: list = []
 		for artist_id in artist_id_list:
-			artist_information: dict = spotify_client.artist(artist_id = artist_id)
+			artist_data: dict = spotify_client.artist(artist_id = artist_id)
 			artist_list.append(
 				Artist(
-					id = artist_information['id'],
-					name = artist_information['name'],
-					genres = artist_information['genres'][0],
-					popularity = artist_information['popularity'],
-					followers = artist_information['followers']['total'],
-					image_url = artist_information['images'][0]['url']
+					id = artist_data['id'],
+					name = artist_data['name'],
+					genres = artist_data['genres'][0],
+					popularity = artist_data['popularity'],
+					followers = artist_data['followers']['total'],
+					image_url = artist_data['images'][0]['url']
 				)
 			)
 
@@ -89,6 +98,26 @@ if __name__ == '__main__':
 			Upload_Artist_Profile_Image(s3_client, artist, file_name)
 			os.remove(path = f"./Backend/Downloads/{file_name}")
 
-		logging.info(msg = '処理が正常に終了しました。')
+		album_list: list = []
+		for artist in artist_list:
+			album_data_list = spotify_client.artist_albums(
+				artist_id = artist.id[0],
+				include_groups = 'single,album,compilation,appears_on',
+				limit = 50,
+				country = 'JP'
+			)['items']
+
+			for album_data in album_data_list:
+				album_list.append(
+					Album(
+						id = album_data['id'],
+						album_type = album_data['album_type'],
+						name = album_data['name'],
+						release_date = datetime.strptime(album_data['release_date'], '%Y-%m-%d'),
+						image_url = album_data['images'][0]['url']
+					)
+				)
+
+		album_list = sorted(album_list, key = lambda x: x.release_date[0])
 	else:
 		logging.error(msg = '環境変数（.env）の読み込みに失敗しました。')
