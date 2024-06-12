@@ -5,7 +5,6 @@ import boto3
 import requests
 
 from io import BytesIO
-
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from PIL import Image
@@ -13,6 +12,15 @@ from spotipy.client import Spotify
 
 from Modules.SET_Environment import Read_Environment_File
 from Modules.Spotify import SET_Spotify_Client
+
+class Artist:
+	def __init__(self, id: str, name: str, genres: str, popularity: int, followers: int, image_url: str):
+		self.id = id,
+		self.name = name,
+		self.genres = genres,
+		self.popularity = popularity,
+		self.followers = followers,
+		self.image_url = image_url
 
 def Create_Boto3_Client():
 	return  boto3.client(
@@ -23,21 +31,20 @@ def Create_Boto3_Client():
 		config = Config(signature_version = 'v4')
 	)
 
-def Upload_Artist_Profile_Image(client, file_name: str) -> None:
+def Upload_Artist_Profile_Image(client, artist: Artist, file_name: str) -> None:
 	try:
 		client.head_object(
 			Bucket = 'av-manage',
-			Key = f"NiziU/{file_name}"
+			Key = f"{artist.name[0]}/{file_name}"
 		)
 	except ClientError:
 		client.upload_file(
 			Filename = f"./Backend/Downloads/{file_name}",
 			Bucket = 'av-manage',
-			Key = f"{artist_name}/{artist_name}_{artist_image_url.split(sep = '/')[-1]}.png",
+			Key = f"{artist.name[0]}/{file_name}",
 		)
 
 		logging.info(msg = f"ファイルアップロード完了: {file_name}")
-	os.remove(path = f"./Backend/Downloads/{file_name}")
 
 if __name__ == '__main__':
 	logging.basicConfig(
@@ -50,24 +57,38 @@ if __name__ == '__main__':
 		s3_client = Create_Boto3_Client()
 		spotify_client: Spotify = SET_Spotify_Client()
 
-		artist_information: dict = spotify_client.artist(artist_id = '3z8diLlUCkN1j9N9ZdnfBJ')
-		artist_name: str = artist_information['name']
-		artist_image_url: str = artist_information['images'][0]['url']
-
-		file_name: str = f"{artist_name}_{artist_image_url.split(sep = '/')[-1]}.png"
-		with Image.open(
-			fp = BytesIO(initial_bytes = requests.get(url = artist_image_url).content),
-			mode = 'r',
-			formats = ('BMP', 'GIF', 'JPEG', 'PNG', 'WEBP')
-		) as image_file:
-			image_file.save(
-				fp = f"./Backend/Downloads/{file_name}",
-				format = 'PNG',
-				compress_level = 0,
-				optimize = False
+		artist_id_list: tuple = ('3z8diLlUCkN1j9N9ZdnfBJ', '4SpbR6yFEvexJuaBpgAU5p', '5R7AMwDeroq6Ls0COQYpS4')
+		artist_list: list = []
+		for artist_id in artist_id_list:
+			artist_information: dict = spotify_client.artist(artist_id = artist_id)
+			artist_list.append(
+				Artist(
+					id = artist_information['id'],
+					name = artist_information['name'],
+					genres = artist_information['genres'][0],
+					popularity = artist_information['popularity'],
+					followers = artist_information['followers']['total'],
+					image_url = artist_information['images'][0]['url']
+				)
 			)
 
-		Upload_Artist_Profile_Image(s3_client, file_name)
+		for artist in artist_list:
+			file_name: str = f"{artist.name[0]}_{artist.image_url.split(sep = '/')[-1]}.png"
+			with Image.open(
+				fp = BytesIO(initial_bytes = requests.get(url = artist.image_url).content),
+				mode = 'r',
+				formats = ('BMP', 'GIF', 'JPEG', 'PNG', 'WEBP')
+			) as image_file:
+				image_file.save(
+					fp = f"./Backend/Downloads/{file_name}",
+					format = 'PNG',
+					compress_level = 0,
+					optimize = False
+				)
+
+			Upload_Artist_Profile_Image(s3_client, artist, file_name)
+			os.remove(path = f"./Backend/Downloads/{file_name}")
+
 		logging.info(msg = '処理が正常に終了しました。')
 	else:
 		logging.error(msg = '環境変数（.env）の読み込みに失敗しました。')
