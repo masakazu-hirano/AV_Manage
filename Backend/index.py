@@ -9,18 +9,11 @@ from io import BytesIO
 
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from dotenv import load_dotenv
 from PIL import Image
 from spotipy.client import Spotify
 from spotipy.oauth2 import SpotifyClientCredentials
 
-def Read_Environment_File() -> bool:
-	return load_dotenv(
-		dotenv_path = './Backend/.env',
-		encoding = 'utf-8',
-		override = True,
-		verbose = True
-	)
+from Modules.SET_Environment import Read_Environment_File
 
 def Create_Spotify_Client() -> Spotify:
 	return spotipy.Spotify(
