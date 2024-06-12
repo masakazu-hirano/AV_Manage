@@ -81,22 +81,22 @@ if __name__ == '__main__':
 				)
 			)
 
-		for artist in artist_list:
-			file_name: str = f"{artist.name[0]}_{artist.image_url.split(sep = '/')[-1]}.png"
-			with Image.open(
-				fp = BytesIO(initial_bytes = requests.get(url = artist.image_url).content),
-				mode = 'r',
-				formats = ('BMP', 'GIF', 'JPEG', 'PNG', 'WEBP')
-			) as image_file:
-				image_file.save(
-					fp = f"./Backend/Downloads/{file_name}",
-					format = 'PNG',
-					compress_level = 0,
-					optimize = False
-				)
+		# for artist in artist_list:
+		# 	file_name: str = f"{artist.name[0]}_{artist.image_url.split(sep = '/')[-1]}.png"
+		# 	with Image.open(
+		# 		fp = BytesIO(initial_bytes = requests.get(url = artist.image_url).content),
+		# 		mode = 'r',
+		# 		formats = ('BMP', 'GIF', 'JPEG', 'PNG', 'WEBP')
+		# 	) as image_file:
+		# 		image_file.save(
+		# 			fp = f"./Backend/Downloads/{file_name}",
+		# 			format = 'PNG',
+		# 			compress_level = 0,
+		# 			optimize = False
+		# 		)
 
-			Upload_Artist_Profile_Image(s3_client, artist, file_name)
-			os.remove(path = f"./Backend/Downloads/{file_name}")
+		# 	Upload_Artist_Profile_Image(s3_client, artist, file_name)
+		# 	os.remove(path = f"./Backend/Downloads/{file_name}")
 
 		album_list: list = []
 		for artist in artist_list:
@@ -105,9 +105,9 @@ if __name__ == '__main__':
 				include_groups = 'single,album,compilation,appears_on',
 				limit = 50,
 				country = 'JP'
-			)['items']
+			)
 
-			for album_data in album_data_list:
+			for album_data in album_data_list['items']:
 				album_list.append(
 					Album(
 						id = album_data['id'],
@@ -119,5 +119,20 @@ if __name__ == '__main__':
 				)
 
 		album_list = sorted(album_list, key = lambda x: x.release_date[0])
+		for album in album_list:
+			track_data_list = spotify_client.album_tracks(
+				album_id = album.id[0],
+				limit = 50,
+				market = 'JP'
+			)
+
+			for track_data in track_data_list['items']:
+				logging.info(msg = f"ID: {track_data['id']}")
+				logging.info(msg = f"タイトル: {track_data['name']}")
+				logging.info(msg = f"再生時間: {track_data['duration_ms'] / 1000}")
+				break
+
+			break
+		logging.info(msg = '処理が正常に終了しました。')
 	else:
 		logging.error(msg = '環境変数（.env）の読み込みに失敗しました。')
