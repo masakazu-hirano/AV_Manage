@@ -1,8 +1,10 @@
+import boto3
 import logging
 import os
 import requests
 import spotipy
 
+from botocore.config import Config
 from dotenv import load_dotenv
 from io import BytesIO
 from PIL import Image
@@ -18,7 +20,7 @@ def Read_Environment_File() -> bool:
 	)
 
 def Create_Spotify_Client() -> Spotify:
-	return  spotipy.Spotify(
+	return spotipy.Spotify(
 		auth_manager = SpotifyClientCredentials(
 			client_id = os.getenv(key = 'SPOTIFY_CLIENT_ID'),
 			client_secret = os.getenv(key = 'SPOTIFY_CLIENT_SECRET_KEY'),
@@ -38,23 +40,11 @@ if __name__ == '__main__':
 	)
 
 	if Read_Environment_File() == True:
-		client: Spotify = Create_Spotify_Client()
+		spotify_client: Spotify = Create_Spotify_Client()
 
-		artist_information: dict = client.artist(artist_id = '3z8diLlUCkN1j9N9ZdnfBJ')
+		artist_information: dict = spotify_client.artist(artist_id = '')
 		artist_name: str = artist_information['name']
 		artist_image_url: str = artist_information['images'][0]['url']
-
-		with Image.open(
-			fp = BytesIO(initial_bytes = requests.get(url = artist_image_url).content),
-			mode = 'r',
-			formats = ('BMP', 'GIF', 'JPEG', 'PNG', 'WEBP')
-		) as image_file:
-			image_file.save(
-				fp = f"./Backend/Downloads/{artist_name}_{artist_image_url.split(sep = '/')[-1]}.png",
-				format = 'PNG',
-				compress_level = 0,
-				optimize = False
-			)
 
 		logging.info(msg = '処理が正常に終了しました。')
 	else:
