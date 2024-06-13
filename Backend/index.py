@@ -31,6 +31,23 @@ class Album:
 		self.release_date = release_date,
 		self.image_url = image_url
 
+def GET_Artist_Data(client: Spotify, artist_id_list: tuple) -> list:
+	artist_list: list = []
+	for artist_id in artist_id_list:
+		artist_data: dict = client.artist(artist_id = artist_id)
+		artist_list.append(
+			Artist(
+				id = artist_data['id'],
+				name = artist_data['name'],
+				genres = artist_data['genres'][0],
+				popularity = artist_data['popularity'],
+				followers = artist_data['followers']['total'],
+				image_url = artist_data['images'][0]['url']
+			)
+		)
+
+	return artist_list
+
 def Upload_Artist_Profile_Image(client, artist: Artist, file_name: str) -> None:
 	try:
 		client.head_object(
@@ -58,19 +75,7 @@ if __name__ == '__main__':
 		spotify_client: Spotify = SET_Spotify_Client()
 
 		artist_id_list: tuple = ('3z8diLlUCkN1j9N9ZdnfBJ', '4SpbR6yFEvexJuaBpgAU5p', '5R7AMwDeroq6Ls0COQYpS4')
-		artist_list: list = []
-		for artist_id in artist_id_list:
-			artist_data: dict = spotify_client.artist(artist_id = artist_id)
-			artist_list.append(
-				Artist(
-					id = artist_data['id'],
-					name = artist_data['name'],
-					genres = artist_data['genres'][0],
-					popularity = artist_data['popularity'],
-					followers = artist_data['followers']['total'],
-					image_url = artist_data['images'][0]['url']
-				)
-			)
+		artist_list: list = GET_Artist_Data(spotify_client, artist_id_list)
 
 		# for artist in artist_list:
 		# 	file_name: str = f"{artist.name[0]}_{artist.image_url.split(sep = '/')[-1]}.png"
