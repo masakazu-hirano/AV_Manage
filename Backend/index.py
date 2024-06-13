@@ -48,6 +48,29 @@ def GET_Artist_Data(client: Spotify, artist_id_list: tuple) -> list:
 
 	return artist_list
 
+def GET_Album_Data(client: Spotify, artist_list: list) -> list:
+	album_list: list = []
+	for artist in artist_list:
+		album_data_list = spotify_client.artist_albums(
+			artist_id = artist.id[0],
+			include_groups = 'single,album,compilation,appears_on',
+			limit = 50,
+			country = 'JP'
+		)
+
+		for album_data in album_data_list['items']:
+			album_list.append(
+				Album(
+					id = album_data['id'],
+					album_type = album_data['album_type'],
+					name = album_data['name'],
+					release_date = datetime.strptime(album_data['release_date'], '%Y-%m-%d'),
+					image_url = album_data['images'][0]['url']
+				)
+			)
+
+	return album_list
+
 def Upload_Artist_Profile_Image(client, artist: Artist, file_name: str) -> None:
 	try:
 		client.head_object(
@@ -94,26 +117,7 @@ if __name__ == '__main__':
 		# 	Upload_Artist_Profile_Image(s3_client, artist, file_name)
 		# 	os.remove(path = f"./Backend/Downloads/{file_name}")
 
-		album_list: list = []
-		for artist in artist_list:
-			album_data_list = spotify_client.artist_albums(
-				artist_id = artist.id[0],
-				include_groups = 'single,album,compilation,appears_on',
-				limit = 50,
-				country = 'JP'
-			)
-
-			for album_data in album_data_list['items']:
-				album_list.append(
-					Album(
-						id = album_data['id'],
-						album_type = album_data['album_type'],
-						name = album_data['name'],
-						release_date = datetime.strptime(album_data['release_date'], '%Y-%m-%d'),
-						image_url = album_data['images'][0]['url']
-					)
-				)
-
+		album_list: list = GET_Album_Data(spotify_client, artist_list)
 		album_list = sorted(album_list, key = lambda x: x.release_date[0])
 		for album in album_list:
 			track_data_list = spotify_client.album_tracks(
