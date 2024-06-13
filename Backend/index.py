@@ -1,8 +1,6 @@
 import json
 import logging
 import os
-
-import boto3
 import requests
 
 from io import BytesIO
@@ -13,6 +11,7 @@ from PIL import Image
 from spotipy.client import Spotify
 
 from Modules.SET_Environment import Read_Environment_File
+from Modules.Cloudflare import SET_R2_Client
 from Modules.Spotify import SET_Spotify_Client
 
 class Artist:
@@ -31,15 +30,6 @@ class Album:
 		self.name = name,
 		self.release_date = release_date,
 		self.image_url = image_url
-
-def Create_Boto3_Client():
-	return  boto3.client(
-		service_name = 's3',
-		endpoint_url = f"https://{os.getenv('R2_BUCKET_URL')}.r2.cloudflarestorage.com",
-		aws_access_key_id = os.getenv('R2_ACCESS_KEY_ID'),
-		aws_secret_access_key = os.getenv('R2_SECRET_ACCESS_KEY'),
-		config = Config(signature_version = 'v4')
-	)
 
 def Upload_Artist_Profile_Image(client, artist: Artist, file_name: str) -> None:
 	try:
@@ -64,7 +54,7 @@ if __name__ == '__main__':
 	)
 
 	if Read_Environment_File() == True:
-		s3_client = Create_Boto3_Client()
+		s3_client = SET_R2_Client()
 		spotify_client: Spotify = SET_Spotify_Client()
 
 		artist_id_list: tuple = ('3z8diLlUCkN1j9N9ZdnfBJ', '4SpbR6yFEvexJuaBpgAU5p', '5R7AMwDeroq6Ls0COQYpS4')
