@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 
@@ -127,12 +128,72 @@ if __name__ == '__main__':
 			)
 
 			for track_data in track_data_list['items']:
-				logging.info(msg = f"ID: {track_data['id']}")
-				logging.info(msg = f"タイトル: {track_data['name']}")
-				logging.info(msg = f"再生時間: {track_data['duration_ms'] / 1000}")
-				break
+				notion_db_list = requests.post(
+					url = f"https://api.notion.com/v1/databases/{os.getenv('NOTION_DATABASE_ID')}/query",
+					headers = {
+						'accept': 'application/json',
+						'content-type': 'application/json',
+						'Notion-Version': '2022-06-28',
+						'Authorization': f"Bearer {os.getenv('NOTION_API_TOKEN')}"
+					},
+					json = {
+						'filter': {
+							'property': 'アーティスト',
+							'multi_select': {'contains': 'Spotify'}
+						},
+						'page_size': 100
+					}
+				).text
 
-			break
+				registered: bool = False
+				for notion_db_record in json.loads(s = notion_db_list)['results']:
+					if track_data['id'] == notion_db_record['properties']['ID']['rich_text'][0]['text']['content']:
+						registered = True
+
+				if registered == False:
+					requests.post(
+						url = f"https://api.notion.com/v1/pages",
+						headers = {
+							'accept': 'application/json',
+							'content-type': 'application/json',
+							'Notion-Version': '2022-06-28',
+							'Authorization': f"Bearer {os.getenv('NOTION_API_TOKEN')}"
+						},
+						json = {
+							'parent': {'database_id': os.getenv('NOTION_DATABASE_ID')},
+							'cover': {'external': {'url': album.image_url}},
+							'properties': {
+								'ID': {
+									'rich_text': [{
+										'text': {'content': track_data['id']}
+									}]
+								},
+								'アーティスト': {
+									'multi_select' :[{
+										'name': track_data['artists'][0]['name'],
+										'color': 'gray'
+									},
+									{
+										'name': 'Spotify',
+										'color': 'gray'
+									}]
+								},
+								'タイトル': {
+									'title': [{
+										'text': {'content': track_data['name']}
+									}]
+								},
+								'再生時間': {'number': track_data['duration_ms'] / 1000},
+								'公開日': {
+									'date': {
+										'start': str(album.release_date[0].date()),
+										'end': None
+									}
+								}
+							}
+						}
+					)
+
 		logging.info(msg = '処理が正常に終了しました。')
 	else:
 		logging.error(msg = '環境変数（.env）の読み込みに失敗しました。')
